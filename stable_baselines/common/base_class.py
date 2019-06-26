@@ -55,10 +55,10 @@ class BaseRLModel(ABC):
             self.observation_space = env.observation_space
             self.action_space = env.action_space
             if requires_vec_env:
-                if isinstance(env, VecEnv):
+                # if isinstance(env, VecEnv):
                     self.n_envs = env.num_envs
-                else:
-                    raise ValueError("Error: the model requires a vectorized environment, please use a VecEnv wrapper.")
+                # else:
+                #     raise ValueError("Error: the model requires a vectorized environment, please use a VecEnv wrapper.")
             else:
                 if isinstance(env, VecEnv):
                     if env.num_envs == 1:
@@ -97,9 +97,9 @@ class BaseRLModel(ABC):
         assert self.action_space == env.action_space, \
             "Error: the environment passed must have at least the same action space as the model was trained on."
         if self._requires_vec_env:
-            assert isinstance(env, VecEnv), \
-                "Error: the environment passed is not a vectorized environment, however {} requires it".format(
-                    self.__class__.__name__)
+            # assert isinstance(env, VecEnv), \
+            #     "Error: the environment passed is not a vectorized environment, however {} requires it".format(
+            #         self.__class__.__name__)
             assert not self.policy.recurrent or self.n_envs == env.num_envs, \
                 "Error: the environment passed must have the same number of environments as the model was trained on." \
                 "This is due to the Lstm policy not being capable of changing the number of environments."
@@ -660,7 +660,7 @@ class ActorCriticRLModel(BaseRLModel):
     @classmethod
     def load(cls, load_path, env=None, **kwargs):
         data, params = cls._load_from_file(load_path)
-
+        
         if 'policy_kwargs' in kwargs and kwargs['policy_kwargs'] != data['policy_kwargs']:
             raise ValueError("The specified policy kwargs do not equal the stored policy kwargs. "
                              "Stored kwargs: {}, specified kwargs: {}".format(data['policy_kwargs'],

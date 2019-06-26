@@ -303,7 +303,7 @@ class PPO2(ActorCriticRLModel):
         return policy_loss, value_loss, policy_entropy, approxkl, clipfrac
 
     def learn(self, total_timesteps, callback=None, seed=None, log_interval=1, tb_log_name="PPO2",
-              reset_num_timesteps=True):
+              reset_num_timesteps=True,resume = 0,save_every_n_updates = -1,save_path="PPO2_{}"):
         # Transform to callable if needed
         self.learning_rate = get_schedule_fn(self.learning_rate)
         self.cliprange = get_schedule_fn(self.cliprange)
@@ -398,7 +398,8 @@ class PPO2(ActorCriticRLModel):
                     # compatibility with callbacks that have no return statement.
                     if callback(locals(), globals()) is False:
                         break
-
+                if save_every_n_updates > 0 and update % save_every_n_updates == 0:
+                    self.save(save_path.format(resume + update))
             return self
 
     def save(self, save_path):
@@ -462,6 +463,7 @@ class Runner(AbstractEnvRunner):
         mb_states = self.states
         ep_infos = []
         for _ in range(self.n_steps):
+            self.obs[:] = self.env.reset()
             actions, values, self.states, neglogpacs = self.model.step(self.obs, self.states, self.dones)
             mb_obs.append(self.obs.copy())
             mb_actions.append(actions)
@@ -471,11 +473,12 @@ class Runner(AbstractEnvRunner):
             clipped_actions = actions
             # Clip the actions to avoid out of bound error
             if isinstance(self.env.action_space, gym.spaces.Box):
-                clipped_actions = np.clip(actions, self.env.action_space.low, self.env.action_space.high)
-            self.obs[:], rewards, self.dones, infos = self.env.step(clipped_actions)
+                clipped_actions = np.clip(actions, self.env.action_space.low, self.env.action_space.high)            
+            self.obs[:], rewards, self.dones, infos = self.env.step(clipped_actions)            
             for info in infos:
                 maybe_ep_info = info.get('episode')
                 if maybe_ep_info is not None:
+                    print(maybe_ep_info)
                     ep_infos.append(maybe_ep_info)
             mb_rewards.append(rewards)
         # batch of steps to batch of rollouts
